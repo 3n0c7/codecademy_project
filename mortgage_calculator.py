@@ -1,17 +1,20 @@
 import csv
 from time import sleep
 import sys
-# mortgage and personal loan calculator interest calculator based on fixed rates
-# 15 year and 30 year options and if downpayment is given exp.20 percent. 
+ 
 class Mortgage:
-
+	"""
+	mortgage and personal loan calculator interest calculator based on fixed rates
+15 year and 30 year.
+	"""
 	def __init__(self, principle, rate, years=30):
 		self.principle = principle
 		self.rate = rate
 		self.years = years
 		self.payment = 0
 
-	def down_payment(self, money_down):
+	def down_payment(self, percentage):
+		money_down = self.principle * (percentage / 100)
 		self.principle -= money_down
 
 	# monthly payment calculator
@@ -30,60 +33,122 @@ class Mortgage:
 		return remaining_balance
 
 
-# simple interest formuala, time is the number of months
 class PersonalLoan:
 
-	def __init__(self, rate, principle, time_in_months):
+	"""simple interest formuala, time is the number of months"""
+
+	def __init__(self, principle, rate, term_in_months):
 		self.rate = rate / 100
 		self.principle = principle
-		self.time_in_months = time_in_months / 12
+		self.term_in_months = term_in_months
 		self.payoff_amount = 0
 		self.payment = 0
 
 	def total_loan_payoff(self):
-		self.payoff_amount = self.principle * (1 + self.rate * self.time_in_months)
+		time_months = self.term_in_months / 12
+		self.payoff_amount = self.principle * (1 + self.rate * time_months)
 		return self.payoff_amount
 
 	def view_interest_amount(self):
 		return self.principle - self.payoff_amount
 
-	def monthly_payment(self, term):
-		self.payment = self.payoff_amount / term
+	def monthly_payment(self):
+		self.payment = self.payoff_amount / self.term_in_months
 		return self.payment
 
 
 class Borrower:
-	
-	def __init__(self, name):
-		self.name = name
-		self.loan_info = {'Loan Type': None, 'Interest Rate': None, 'Monthly Payment': None, 'Principle': None}
+
+	"""user's loan information"""
+
+	def __init__(self,file_name):
+		self.file_name = file_name
+		self.loan_info = {'Loan Type': None, 'Rate': None, 'Monthly Payment': None, 'Term': None, 'Principle': None}
 
 	def __repr__(self) -> str:
-		return ""
+		return " Terminal Program ".center(50, "*")
 
 	def input_loan_info(self):
-		print("{self.name} please enter information for your loan")
-		self.loan_info['Loan Type'] = input("Type of loan: ")
-		self.loan_info['Interest rate'] = float(input("Interest rate: "))
+		print("Enter loan information...\n\n")
+		self.loan_info['Loan Type'] = input("Type of Loan (mortgage or personal): ")
+		if self.loan_info['Loan Type'].lower() != 'mortgage' and self.loan_info['Loan Type'].lower() != 'personal':
+			raise ValueError("Wrong Loan Type")
+		self.loan_info['Rate'] = float(input("Interest Rate: "))
 		try:
-			self.loan_info['Principle'] = int(input("Loan amount: "))
+			self.loan_info['Term'] = int(input("Loan Term (personal=months | mortgage=years): "))
+			self.loan_info['Principle'] = int(input("Loan Amount: "))
 		except ValueError:
-			print("Integer value of priciple, no decimal")
+			print("Value must be an integer")
 			sys.exit(1)
 
-	def input_monthly_payment(self, monthly_payment):
+	def append_monthly_payment(self, monthly_payment):
 		self.loan_info['Monthly Payment'] = monthly_payment
 
-	def output_to_csv(self, file_name):
-		with open(f"{file_name}.csv", "w", encoding='UTF-8') as file:
-			fields = ['Loan Type', 'Interest Rate', 'Monthly Payment', 'Principle']
+	def output_to_csv(self):
+		with open(f"{self.file_name}.csv", "w", encoding='UTF-8') as file:
+			fields = ['Loan Type', 'Rate', 'Monthly Payment', 'Term', 'Principle']
 			output = csv.DictWriter(file, fieldnames=fields)
 			output.writeheader()
-			loan_list = list(self.loan_info)
+			loan_list = [self.loan_info]
 			for item in loan_list:
 				output.writerow(item)
 
-def main():
-	pass
+terminal_prompt = """
+                
 
+                      _                
+ /|/|   __/_ _ _ _   / )_ /_   /__/  _ 
+/   |()/ /(/(/(/(-  (__(/(( (/((//()/  
+         _/  _/                        
+____                __                 
+ /  _ _ _  '  _ /  /__)_   _ _ _ _     
+(  (-/ //)//)(/(  /   / ()(// (///)    
+                         _/            
+
+ 
+"""
+
+def main():
+	try:
+		output_filename = sys.argv[1]
+	except IndexError:
+		print("filename parameter missing!\nUsage>python3 mortgage_calculator.py <filename>")
+		sys.exit(1)
+	user = Borrower(output_filename)
+	print(user)
+	for text in terminal_prompt:
+		print(text, end="", flush=True)
+		sleep(0.01)
+	user.input_loan_info()
+	if user.loan_info['Loan Type'].lower() == 'mortgage':
+		mortgage_loan = Mortgage(user.loan_info['Principle'], user.loan_info['Rate'], user.loan_info['Term'])
+		money_down_percentage = int(input("Down Payment Percentage: "))
+		if money_down_percentage < 0 or money_down_percentage > 100:
+			raise ValueError("Enter integer between 0 and 100")
+		mortgage_loan.down_payment(money_down_percentage)
+		mortgage_payment = mortgage_loan.monthly_payment()
+		user.append_monthly_payment(mortgage_payment)
+		print("Monthly Payment --> {}\n\n".format(mortgage_payment))
+		view_balance_remaining = input("View mortgage balance(y/n): ")
+		if view_balance_remaining.lower() == 'y':
+			try:
+				num_paymets = int(input("How many payments have been made: "))
+				print("Your mortgage balance is {} ".format(mortgage_loan.balance(num_paymets)))
+			except ValueError:
+				print("Value must be an integer")
+				sys.exit(1)
+	else:
+		personal_loan = PersonalLoan(user.loan_info['Principle'], user.loan_info['Rate'], user.loan_info['Term'])
+		personal_loan_payoff = personal_loan.total_loan_payoff()
+		personal_loan_interest = personal_loan.view_interest_amount()
+		personal_loan_payment = personal_loan.monthly_payment()
+		user.append_monthly_payment(personal_loan_payment)
+		print(f"Total Payoff Amount --> {personal_loan_payoff}")
+		print(f"Interest Amount --> {personal_loan_interest}")
+		print(f"Monthly Payment --> {personal_loan_payment}\n\n")
+	print("Outputting to csv file")
+	user.output_to_csv()
+	print("Exiting...")
+if __name__ == '__main__':
+	main()
 sys.exit(0)
