@@ -4,10 +4,11 @@ import sys
 import argparse
  
 class Mortgage:
+
 	"""
-	mortgage and personal loan calculator interest calculator based on fixed rates
-15 year and 30 year.
+	mortgage and personal loan calculator interest calculator using fixed rates
 	"""
+
 	def __init__(self, principle, rate, years=30):
 		self.principle = principle
 		self.rate = rate
@@ -18,14 +19,14 @@ class Mortgage:
 		money_down = self.principle * (percentage / 100)
 		self.principle -= money_down
 
-	# monthly payment calculator
+	# monthly payment function
 	def monthly_payment(self):
 		fixed_rate = (self.rate / 100) / 12
 		term = 12 * self.years
 		self.payment = (self.principle * (1 + fixed_rate) ** term * fixed_rate) // ((1 + fixed_rate) ** term - 1)
 		return self.payment
 
-	# remaining balance calculator, must input number of payments made
+	# remaining balance function, input number of payments made
 	def balance(self, payments_made):
 		fixed_rate = self.rate / 100 / 12 + 1
 		term = self.years * 12
@@ -36,7 +37,7 @@ class Mortgage:
 
 class PersonalLoan:
 
-	"""simple interest formuala, time is the number of months"""
+	"""simple interest formuala, using number of months"""
 
 	def __init__(self, principle, rate, term_in_months):
 		self.rate = rate / 100
@@ -85,6 +86,7 @@ class Borrower:
 	def append_monthly_payment(self, monthly_payment):
 		self.loan_info['Monthly Payment'] = monthly_payment
 
+	# round monthly payment to format from float value
 	def output_to_csv(self,file_name):
 		with open(f"{file_name}.csv", "w", encoding='UTF-8') as file:
 			fields = ['Loan Type', 'Rate', 'Monthly Payment', 'Term', 'Principle']
