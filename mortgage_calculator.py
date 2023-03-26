@@ -1,6 +1,7 @@
 import csv
 from time import sleep
 import sys
+import argparse
  
 class Mortgage:
 	"""
@@ -28,8 +29,8 @@ class Mortgage:
 	def balance(self, payments_made):
 		fixed_rate = self.rate / 100 / 12 + 1
 		term = self.years * 12
-		formula = ((fixed_rate ** term) - (fixed_rate ** payments_made)) // (fixed_rate ** term - 1)
-		remaining_balance = self.principle * formula
+		bal_form = ((fixed_rate ** term) - (fixed_rate ** payments_made)) / (fixed_rate ** term - 1)
+		remaining_balance = self.principle * bal_form
 		return remaining_balance
 
 
@@ -61,18 +62,18 @@ class Borrower:
 
 	"""user's loan information"""
 
-	def __init__(self,file_name):
-		self.file_name = file_name
+	def __init__(self):
 		self.loan_info = {'Loan Type': None, 'Rate': None, 'Monthly Payment': None, 'Term': None, 'Principle': None}
 
 	def __repr__(self) -> str:
 		return " Terminal Program ".center(50, "*")
 
 	def input_loan_info(self):
-		print("Enter loan information...\n\n")
+		print(" Enter Loan Information ".center(50, "*"))
+		print("\n\n")
 		self.loan_info['Loan Type'] = input("Type of Loan (mortgage or personal): ")
 		if self.loan_info['Loan Type'].lower() != 'mortgage' and self.loan_info['Loan Type'].lower() != 'personal':
-			raise ValueError("Wrong Loan Type")
+			raise ValueError("Wrong Loan Option")
 		self.loan_info['Rate'] = float(input("Interest Rate: "))
 		try:
 			self.loan_info['Term'] = int(input("Loan Term (personal=months | mortgage=years): "))
@@ -84,11 +85,12 @@ class Borrower:
 	def append_monthly_payment(self, monthly_payment):
 		self.loan_info['Monthly Payment'] = monthly_payment
 
-	def output_to_csv(self):
-		with open(f"{self.file_name}.csv", "w", encoding='UTF-8') as file:
+	def output_to_csv(self,file_name):
+		with open(f"{file_name}.csv", "w", encoding='UTF-8') as file:
 			fields = ['Loan Type', 'Rate', 'Monthly Payment', 'Term', 'Principle']
 			output = csv.DictWriter(file, fieldnames=fields)
 			output.writeheader()
+			self.loan_info['Monthly Payment'] = round(self.loan_info['Monthly Payment'], 2)
 			loan_list = [self.loan_info]
 			for item in loan_list:
 				output.writerow(item)
@@ -109,12 +111,10 @@ ____                __
 """
 
 def main():
-	try:
-		output_filename = sys.argv[1]
-	except IndexError:
-		print("filename parameter missing!\nUsage>python3 mortgage_calculator.py <filename>")
-		sys.exit(1)
-	user = Borrower(output_filename)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-o", "--output", action="store_true", help="output to a csv file")
+	args = parser.parse_args()
+	user = Borrower()
 	print(user)
 	for text in terminal_prompt:
 		print(text, end="", flush=True)
@@ -128,12 +128,13 @@ def main():
 		mortgage_loan.down_payment(money_down_percentage)
 		mortgage_payment = mortgage_loan.monthly_payment()
 		user.append_monthly_payment(mortgage_payment)
-		print("Monthly Payment --> {}\n\n".format(mortgage_payment))
+		print("Monthly Payment --> {:.2f}\n\n".format(mortgage_payment))
 		view_balance_remaining = input("View mortgage balance(y/n): ")
 		if view_balance_remaining.lower() == 'y':
 			try:
 				num_paymets = int(input("How many payments have been made: "))
-				print("Your mortgage balance is {} ".format(mortgage_loan.balance(num_paymets)))
+				bal = mortgage_loan.balance(num_paymets)
+				print(f"Your mortgage balance is {bal:.2f}")
 			except ValueError:
 				print("Value must be an integer")
 				sys.exit(1)
@@ -143,11 +144,12 @@ def main():
 		personal_loan_interest = personal_loan.view_interest_amount()
 		personal_loan_payment = personal_loan.monthly_payment()
 		user.append_monthly_payment(personal_loan_payment)
-		print(f"Total Payoff Amount --> {personal_loan_payoff}")
-		print(f"Interest Amount --> {personal_loan_interest}")
-		print(f"Monthly Payment --> {personal_loan_payment}\n\n")
-	print("Outputting to csv file")
-	user.output_to_csv()
+		print(f"Total Payoff Amount --> {personal_loan_payoff:.2f}")
+		print(f"Interest Amount --> {personal_loan_interest:.2f}")
+		print(f"Monthly Payment --> {personal_loan_payment:.2f}\n\n")
+	if args.output:
+		output_filename = input("Output Filename: ")
+		user.output_to_csv(output_filename)
 	print("Exiting...")
 if __name__ == '__main__':
 	main()
