@@ -115,6 +115,7 @@ ____                __
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-o", "--output", action="store_true", help="output to a csv file")
+	parser.add_argument("-b", "--balance", action="store_true", help="view mortgage balance")
 	args = parser.parse_args()
 	user = Borrower()
 	print(user)
@@ -131,8 +132,7 @@ def main():
 		mortgage_payment = mortgage_loan.monthly_payment()
 		user.append_monthly_payment(mortgage_payment)
 		print("Monthly Payment --> {:.2f}\n\n".format(mortgage_payment))
-		view_balance_remaining = input("View mortgage balance(y/n): ")
-		if view_balance_remaining.lower() == 'y':
+		if args.balance:
 			try:
 				num_paymets = int(input("How many payments have been made: "))
 				bal = mortgage_loan.balance(num_paymets)
